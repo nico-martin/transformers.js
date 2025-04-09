@@ -42,15 +42,14 @@ import {
     PriorityQueue,
     TokenLattice,
     CharTrie,
+    DictionarySplitter,
 } from './utils/data-structures.js';
 
 import { Template } from '@huggingface/jinja';
 
 import {
-    WHISPER_LANGUAGE_MAPPING,
-    whisper_language_to_code,
+    WHISPER_LANGUAGE_MAPPING
 } from './models/whisper/common_whisper.js';
-import { GITHUB_ISSUE_URL } from './utils/constants.js';
 
 /**
  * @typedef {Object} TokenizerProperties Additional tokenizer-specific properties.
@@ -366,13 +365,15 @@ export class TokenizerModel extends Callable {
                 return new BPE(config);
 
             default:
-                // Some tokenizers, like for google-t5/t5-small, do not have a `type` field.
-                // In this case, we can infer the tokenizer type based on the structure of the `vocab` field.
+                // Some older tokenizers, like `google-t5/t5-small` and `distilbert/distilbert-base-uncased`, do not have a `type` field.
+                // In this case, we can infer the tokenizer type based on the structure of the `vocab` field and other properties.
                 if (config.vocab) {
                     if (Array.isArray(config.vocab)) {
                         // config.vocab is of type `[string, number][]`
                         // @ts-ignore
                         return new Unigram(config, ...args);
+                    } else if (typeof config.vocab === 'object' && config.continuing_subword_prefix && config.unk_token) {
+                        return new WordPieceTokenizer(config);
                     } else {
                         // @ts-ignore
                         return new LegacyTokenizerModel(config, ...args);
@@ -535,7 +536,7 @@ class Unigram extends TokenizerModel {
      * Create a new Unigram tokenizer model.
      * @param {Object} config The configuration object for the Unigram model.
      * @param {number} config.unk_id The ID of the unknown token
-     * @param {any[][]} config.vocab A 2D array representing a mapping of tokens to scores.
+     * @param {[string, number][]} config.vocab A 2D array representing a mapping of tokens to scores.
      * @param {Object} moreConfig Additional configuration object for the Unigram model.
      */
     constructor(config, moreConfig) {
@@ -543,11 +544,10 @@ class Unigram extends TokenizerModel {
 
         const vocabSize = config.vocab.length;
         this.vocab = new Array(vocabSize);
+        /** @type {number[]} */
         this.scores = new Array(vocabSize);
         for (let i = 0; i < vocabSize; ++i) {
-            const piece = config.vocab[i];
-            this.vocab[i] = piece[0];
-            this.scores[i] = piece[1];
+            [this.vocab[i], this.scores[i]] = config.vocab[i];
         }
 
         this.unk_token_id = config.unk_id;
@@ -996,6 +996,8 @@ class Normalizer extends Callable {
                 return new Replace(config);
             case 'NFC':
                 return new NFC(config);
+            case 'NFD':
+                return new NFD(config);
             case 'NFKC':
                 return new NFKC(config);
             case 'NFKD':
@@ -1054,50 +1056,62 @@ class Replace extends Normalizer {
 }
 
 /**
- * A normalizer that applies Unicode normalization form C (NFC) to the input text.
+ * A normalizer that applies Unicode normalization to the input text.
  * @extends Normalizer
+ * @abstract
  */
-class NFC extends Normalizer {
+class UnicodeNormalizer extends Normalizer {
     /**
-     * Normalize the input text by applying Unicode normalization form C (NFC).
+     * @type {string} The Unicode normalization form to apply.
+     * Should be one of: 'NFC', 'NFD', 'NFKC', or 'NFKD'.
+     */
+    form = undefined;
+
+    /**
+     * Normalize the input text by applying Unicode normalization.
      * @param {string} text The input text to be normalized.
      * @returns {string} The normalized text.
      */
     normalize(text) {
-        text = text.normalize('NFC')
+        text = text.normalize(this.form)
         return text;
     }
 }
 
 /**
- * NFKC Normalizer.
- * @extends Normalizer
+ * A normalizer that applies Unicode normalization form C (NFC) to the input text.
+ * Canonical Decomposition, followed by Canonical Composition.
+ * @extends UnicodeNormalizer
  */
-class NFKC extends Normalizer {
-    /**
-     * Normalize text using NFKC normalization.
-     * @param {string} text The text to be normalized.
-     * @returns {string} The normalized text.
-     */
-    normalize(text) {
-        text = text.normalize('NFKC')
-        return text;
-    }
+class NFC extends UnicodeNormalizer {
+    form = 'NFC';
 }
+
 /**
- * NFKD Normalizer.
- * @extends Normalizer
+ * A normalizer that applies Unicode normalization form D (NFD) to the input text.
+ * Canonical Decomposition.
+ * @extends UnicodeNormalizer
  */
-class NFKD extends Normalizer {
-    /**
-     * Normalize text using NFKD normalization.
-     * @param {string} text The text to be normalized.
-     * @returns {string} The normalized text.
-     */
-    normalize(text) {
-        text = text.normalize('NFKD')
-        return text;
-    }
+class NFD extends UnicodeNormalizer {
+    form = 'NFD';
+}
+
+/**
+ * A normalizer that applies Unicode normalization form KC (NFKC) to the input text.
+ * Compatibility Decomposition, followed by Canonical Composition.
+ * @extends UnicodeNormalizer
+ */
+class NFKC extends UnicodeNormalizer {
+    form = 'NFKC';
+}
+
+/**
+ * A normalizer that applies Unicode normalization form KD (NFKD) to the input text.
+ * Compatibility Decomposition.
+ * @extends UnicodeNormalizer
+ */
+class NFKD extends UnicodeNormalizer {
+    form = 'NFKD';
 }
 
 /**
@@ -2584,13 +2598,12 @@ export class PreTrainedTokenizer extends Callable {
             this.decoder.end_of_word_suffix = this.model.end_of_word_suffix;
         }
 
-        this.added_tokens_regex = this.added_tokens.length > 0 ? new RegExp(
-            this.added_tokens.slice()
-                // Sort by length (desc) to avoid early partial matches
-                .sort((a, b) => b.content.length - a.content.length)
-                .map(x => `${x.lstrip ? '\\s*' : ''}(${escapeRegExp(x.content)})${x.rstrip ? '\\s*' : ''}`)
-                .join('|')
-        ) : null;
+        this.added_tokens_splitter = new DictionarySplitter(
+            this.added_tokens.map(x => x.content),
+        );
+
+        /** @type {Map<string, AddedToken>} */
+        this.added_tokens_map = new Map(this.added_tokens.map(x => [x.content, x]))
 
         // Set mask token if present (otherwise will be undefined, which is fine)
         this.mask_token = this.getToken('mask_token');
@@ -2885,40 +2898,50 @@ export class PreTrainedTokenizer extends Callable {
         // Actual function which does encoding, for a single text
         // First, we take care of special tokens. Needed to avoid issues arising from
         // normalization and/or pretokenization (which may not preserve special tokens)
-        const sections = this.added_tokens_regex ? text.split(this.added_tokens_regex).filter(x => x) : [text];
+        const sections = this.added_tokens_splitter.split(text);
 
-        const tokens = sections.map((x, section_index) => {
-            const addedToken = this.added_tokens.find(t => t.content === x);
-            if (addedToken !== undefined) {
-                // Ignore added tokens
-                return x
-            } else {
-                if (this.remove_space === true) {
-                    x = x.trim().split(/\s+/).join(' ');
+        // Process left/right stripping of added tokens
+        for (let i = 0; i < sections.length; ++i) {
+            const addedToken = this.added_tokens_map.get(sections[i]);
+            if (addedToken) {
+                if (addedToken.lstrip && i > 0) {
+                    sections[i - 1] = sections[i - 1].trimEnd();
                 }
-                if (this.do_lowercase_and_remove_accent) {
-                    x = lowercase_and_remove_accent(x);
+                if (addedToken.rstrip && i < sections.length - 1) {
+                    sections[i + 1] = sections[i + 1].trimStart();
                 }
-
-                if (this.normalizer !== null) {
-                    x = this.normalizer(x);
-                }
-
-                // If, after normalization, this section is empty (e.g., trimming whitespace),
-                // we return an empty array
-                if (x.length === 0) {
-                    return [];
-                }
-
-                const sectionTokens = (this.pre_tokenizer !== null) ? this.pre_tokenizer(x, {
-                    section_index,
-                }) : [x];
-
-                const tokens = this.model(sectionTokens);
-
-                return tokens;
             }
-        }).flat();
+        }
+
+        const tokens = sections.flatMap((x, section_index) => {
+            if (x.length === 0) return [];
+            if (this.added_tokens_map.has(x)) return [x]; // Return added tokens unchanged
+
+            if (this.remove_space === true) {
+                x = x.trim().split(/\s+/).join(' ');
+            }
+            if (this.do_lowercase_and_remove_accent) {
+                x = lowercase_and_remove_accent(x);
+            }
+
+            if (this.normalizer !== null) {
+                x = this.normalizer(x);
+            }
+
+            // If, after normalization, this section is empty (e.g., trimming whitespace),
+            // we return an empty array
+            if (x.length === 0) {
+                return [];
+            }
+
+            const sectionTokens = (this.pre_tokenizer !== null) ? this.pre_tokenizer(x, {
+                section_index,
+            }) : [x];
+
+            const tokens = this.model(sectionTokens);
+
+            return tokens;
+        });
 
         return tokens;
     }

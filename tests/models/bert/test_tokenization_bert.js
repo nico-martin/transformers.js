@@ -1,5 +1,5 @@
 import { BertTokenizer } from "../../../src/tokenizers.js";
-import { BASE_TEST_STRINGS, BERT_TEST_STRINGS } from "../test_strings.js";
+import { BASE_TEST_STRINGS, BERT_TEST_STRINGS, NORMALIZATION_TEST_STRINGS } from "../test_strings.js";
 
 export const TOKENIZER_CLASS = BertTokenizer;
 export const TEST_CONFIG = {
@@ -1330,6 +1330,42 @@ export const TEST_CONFIG = {
       tokens: ["test", "$", "1", "r2", "#", "3", "[UNK]", "[UNK]", "[UNK]", "[UNK]", "[UNK]", "[UNK]", "test"],
       ids: [1, 6943, 18005, 208, 6847, 9474, 284, 18017, 18017, 18017, 18017, 18017, 18017, 6943, 2],
       decoded: "[CLS] test $ 1 r2 # 3 [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] test [SEP]",
+    },
+  },
+  // `model.type` field missing in tokenizer.json
+  "google-bert/bert-base-cased": {
+    CHINESE_LATIN_MIXED: {
+      text: BERT_TEST_STRINGS.CHINESE_LATIN_MIXED,
+      tokens: ["ah", "[UNK]", "[UNK]", "z", "##z"],
+      ids: [101, 18257, 100, 100, 195, 1584, 102],
+      decoded: "[CLS] ah [UNK] [UNK] zz [SEP]",
+    },
+  },
+  // NFD normalizer
+  "onnx-community/language_detection-ONNX": {
+    DEFAULT_EXAMPLE: {
+      text: NORMALIZATION_TEST_STRINGS.DEFAULT_EXAMPLE,
+      tokens: ["ame", "##lie", "|", "ame", "##lie"],
+      ids: [1, 21947, 31933, 70, 21947, 31933, 2],
+      decoded: "[CLS] amelie | amelie [SEP]",
+    },
+    CANONICAL_EQUIVALENCE_NORMALIZATION: {
+      text: NORMALIZATION_TEST_STRINGS.CANONICAL_EQUIVALENCE_NORMALIZATION,
+      tokens: ["n", "|", "n"],
+      ids: [1, 56, 70, 56, 2],
+      decoded: "[CLS] n | n [SEP]",
+    },
+    COMPATIBILITY_NORMALIZATION: {
+      text: NORMALIZATION_TEST_STRINGS.COMPATIBILITY_NORMALIZATION,
+      tokens: ["[UNK]", "|", "ff"],
+      ids: [1, 0, 70, 40133, 2],
+      decoded: "[CLS] [UNK] | ff [SEP]",
+    },
+    COMBINED_EXAMPLE: {
+      text: NORMALIZATION_TEST_STRINGS.COMBINED_EXAMPLE,
+      tokens: ["ſ", "|", "ſ", "|", "ſ", "|", "s", "|", "s"],
+      ids: [1, 121, 70, 121, 70, 121, 70, 61, 70, 61, 2],
+      decoded: "[CLS] ſ | ſ | ſ | s | s [SEP]",
     },
   },
 };

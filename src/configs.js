@@ -67,18 +67,25 @@ function getNormalizedConfig(config) {
         // Sub-configs
         case 'llava':
         case 'paligemma':
+        case 'gemma3':
         case 'florence2':
         case 'llava_onevision':
         case 'idefics3':
+        case 'ultravox':
+        case 'smolvlm':
+            // @ts-expect-error TS2339
             init_normalized_config = getNormalizedConfig(config.text_config);
             break;
         case 'moondream1':
+            // @ts-expect-error TS2339
             init_normalized_config = getNormalizedConfig(config.phi_config);
             break;
         case 'musicgen':
+            // @ts-expect-error TS2339
             init_normalized_config = getNormalizedConfig(config.decoder);
             break;
         case 'multi_modality':
+            // @ts-expect-error TS2339
             init_normalized_config = getNormalizedConfig(config.language_config);
             break;
 
@@ -120,6 +127,9 @@ function getNormalizedConfig(config) {
             break;
         case 'gemma':
         case 'gemma2':
+        case 'gemma3_text':
+        case 'glm':
+        case 'helium':
             mapping['num_heads'] = 'num_key_value_heads';
             mapping['num_layers'] = 'num_hidden_layers';
             mapping['dim_kv'] = 'head_dim';
@@ -167,6 +177,7 @@ function getNormalizedConfig(config) {
         case 'mbart':
         case 'marian':
         case 'whisper':
+        case 'lite-whisper':
         case 'm2m_100':
         case 'blenderbot':
         case 'blenderbot-small':
@@ -192,13 +203,19 @@ function getNormalizedConfig(config) {
             mapping['encoder_hidden_size'] = mapping['decoder_hidden_size'] = 'd_model';
             break;
         case 'musicgen_decoder':
-        case 'moonshine':
             mapping['num_encoder_layers'] = mapping['num_decoder_layers'] = 'num_hidden_layers';
             mapping['num_encoder_heads'] = mapping['num_decoder_heads'] = 'num_attention_heads';
             mapping['encoder_hidden_size'] = mapping['decoder_hidden_size'] = 'hidden_size';
             break;
-
+        case 'moonshine':
+            mapping['num_decoder_layers'] = 'decoder_num_hidden_layers';
+            mapping['num_decoder_heads'] = 'decoder_num_key_value_heads';
+            mapping['num_encoder_layers'] = 'encoder_num_hidden_layers';
+            mapping['num_encoder_heads'] = 'encoder_num_key_value_heads';
+            mapping['encoder_hidden_size'] = mapping['decoder_hidden_size'] = 'hidden_size';
+            break;
         case 'vision-encoder-decoder':
+            // @ts-expect-error TS2339
             const decoderConfig = getNormalizedConfig(config.decoder);
 
             const add_encoder_pkv = 'num_decoder_layers' in decoderConfig;
@@ -393,5 +410,5 @@ export class AutoConfig {
  * for more information.
  * @property {import('./utils/devices.js').DeviceType} [device] The default device to use for the model.
  * @property {import('./utils/dtypes.js').DataType|Record<string, import('./utils/dtypes.js').DataType>} [dtype] The default data type to use for the model.
- * @property {boolean|Record<string, boolean>} [use_external_data_format=false] Whether to load the model using the external data format (used for models >= 2GB in size).
+ * @property {import('./utils/hub.js').ExternalData|Record<string, import('./utils/hub.js').ExternalData>} [use_external_data_format=false] Whether to load the model using the external data format (used for models >= 2GB in size).
  */

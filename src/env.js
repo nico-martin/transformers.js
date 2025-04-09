@@ -26,7 +26,7 @@ import fs from 'fs';
 import path from 'path';
 import url from 'url';
 
-const VERSION = '3.2.1';
+const VERSION = '3.4.2';
 
 // Check if various APIs are available (depends on environment)
 const IS_BROWSER_ENV = typeof window !== "undefined" && typeof window.document !== "undefined";
@@ -160,4 +160,3 @@ export const env = {
 function isEmpty(obj) {
     return Object.keys(obj).length === 0;
 }
-
