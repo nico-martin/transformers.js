@@ -996,6 +996,11 @@ export class TextGenerationPipeline extends (/** @type {new (options: TextPipeli
         let isBatched = false;
         let isChatInput = false;
 
+        // By default, do not add special tokens, unless the tokenizer specifies otherwise
+        let add_special_tokens = generate_kwargs.add_special_tokens
+            ?? (this.tokenizer.add_bos_token || this.tokenizer.add_eos_token)
+            ?? false;
+
         // Normalize inputs
         /** @type {string[]} */
         let inputs;
@@ -1021,10 +1026,8 @@ export class TextGenerationPipeline extends (/** @type {new (options: TextPipeli
                     add_generation_prompt: true,
                 })
             ));
+            add_special_tokens = false; // Chat template handles this already
         }
-
-        // By default, do not add special tokens
-        const add_special_tokens = generate_kwargs.add_special_tokens ?? false;
 
         // By default, return full text
         const return_full_text = isChatInput
@@ -1229,7 +1232,7 @@ export class ZeroShotClassificationPipeline extends (/** @type {new (options: Te
 
 /**
  * @typedef {Object} FeatureExtractionPipelineOptions Parameters specific to feature extraction pipelines.
- * @property {'none'|'mean'|'cls'} [pooling="none"] The pooling method to use.
+ * @property {'none'|'mean'|'cls'|'first_token'|'eos'|'last_token'} [pooling="none"] The pooling method to use.
  * @property {boolean} [normalize=false] Whether or not to normalize the embeddings in the last dimension.
  * @property {boolean} [quantize=false] Whether or not to quantize the embeddings.
  * @property {'binary'|'ubinary'} [precision='binary'] The precision to use for quantization.
@@ -1322,14 +1325,24 @@ export class FeatureExtractionPipeline extends (/** @type {new (options: TextPip
 
         /** @type {Tensor} */
         let result = outputs.last_hidden_state ?? outputs.logits ?? outputs.token_embeddings;
-        if (pooling === 'none') {
-            // Skip pooling
-        } else if (pooling === 'mean') {
-            result = mean_pooling(result, model_inputs.attention_mask);
-        } else if (pooling === 'cls') {
-            result = result.slice(null, 0);
-        } else {
-            throw Error(`Pooling method '${pooling}' not supported.`);
+
+        switch (pooling) {
+            case 'none':
+                // Skip pooling
+                break;
+            case 'mean':
+                result = mean_pooling(result, model_inputs.attention_mask);
+                break;
+            case 'first_token':
+            case 'cls':
+                result = result.slice(null, 0);
+                break;
+            case 'last_token':
+            case 'eos':
+                result = result.slice(null, -1);
+                break;
+            default:
+                throw Error(`Pooling method '${pooling}' not supported.`);
         }
 
         if (normalize) {
@@ -1912,7 +1925,7 @@ export class AutomaticSpeechRecognitionPipeline extends (/** @type {new (options
         for (const aud of preparedAudios) {
             const inputs = await this.processor(aud);
 
-            // According to the [paper](https://arxiv.org/pdf/2410.15608):
+            // According to the [paper](https://huggingface.co/papers/2410.15608):
             // "We use greedy decoding, with a heuristic limit of 6 output tokens
             // per second of audio to avoid repeated output sequences."
             const max_new_tokens = Math.floor(aud.length / sampling_rate) * 6;

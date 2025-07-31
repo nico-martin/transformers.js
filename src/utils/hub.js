@@ -1,12 +1,12 @@
 
 /**
  * @file Utility functions to interact with the Hugging Face Hub (https://huggingface.co/models)
- * 
+ *
  * @module utils/hub
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { apis, env } from '../env.js';
 import { dispatchCallback } from './core.js';
@@ -19,7 +19,7 @@ import { dispatchCallback } from './core.js';
 export const MAX_EXTERNAL_DATA_CHUNKS = 100;
 
 /**
- * @typedef {Object} PretrainedOptions Options for loading a pretrained model.     
+ * @typedef {Object} PretrainedOptions Options for loading a pretrained model.
  * @property {import('./core.js').ProgressCallback} [progress_callback=null] If specified, this function will be called during model construction, to provide the user with progress updates.
  * @property {import('../configs.js').PretrainedConfig} [config=null] Configuration for the model to use instead of an automatically loaded configuration. Configuration can be automatically loaded when:
  * - The model is a model provided by the library (loaded with the *model id* string of a pretrained model).
@@ -158,7 +158,7 @@ class FileResponse {
     /**
      * Reads the contents of the file specified by the filePath property and returns a Promise that
      * resolves with a parsed JavaScript object containing the file's contents.
-     * 
+     *
      * @returns {Promise<Object>} A Promise that resolves with a parsed JavaScript object containing the file's contents.
      * @throws {Error} If the file cannot be read.
      */
@@ -195,7 +195,7 @@ const REPO_ID_REGEX = /^(\b[\w\-.]+\b\/)?\b[\w\-.]{1,96}\b$/;
 /**
  * Tests whether a string is a valid Hugging Face model ID or not.
  * Adapted from https://github.com/huggingface/huggingface_hub/blob/6378820ebb03f071988a96c7f3268f5bdf8f9449/src/huggingface_hub/utils/_validators.py#L119-L170
- * 
+ *
  * @param {string} string The string to test
  * @returns {boolean} True if the string is a valid model ID, false otherwise.
  */
@@ -214,9 +214,14 @@ function isValidHfModelId(string) {
  */
 export async function getFile(urlOrPath) {
 
-    if (env.useFS && !isValidUrl(urlOrPath, ['http:', 'https:', 'blob:'])) {
-        return new FileResponse(urlOrPath.toString());
-
+    if (env.useFS && !isValidUrl(urlOrPath, ["http:", "https:", "blob:"])) {
+        return new FileResponse(
+          urlOrPath instanceof URL
+            ? urlOrPath.protocol === "file:"
+              ? urlOrPath.pathname
+              : urlOrPath.toString()
+            : urlOrPath,
+        );
     } else if (typeof process !== 'undefined' && process?.release?.name === 'node') {
         const IS_CI = !!process.env?.TESTING_REMOTELY;
         const version = env.version;
@@ -280,7 +285,7 @@ function handleError(status, remoteURL, fatal) {
 class FileCache {
     /**
      * Instantiate a `FileCache` object.
-     * @param {string} path 
+     * @param {string} path
      */
     constructor(path) {
         this.path = path;
@@ -288,7 +293,7 @@ class FileCache {
 
     /**
      * Checks whether the given request is in the cache.
-     * @param {string} request 
+     * @param {string} request
      * @returns {Promise<FileResponse | undefined>}
      */
     async match(request) {
@@ -305,8 +310,8 @@ class FileCache {
 
     /**
      * Adds the given response to the cache.
-     * @param {string} request 
-     * @param {Response} response 
+     * @param {string} request
+     * @param {Response} response
      * @param {(data: {progress: number, loaded: number, total: number}) => void} [progress_callback] Optional.
      * The function to call with progress updates
      * @returns {Promise<void>}
@@ -364,7 +369,7 @@ class FileCache {
 }
 
 /**
- * 
+ *
  * @param {FileCache|Cache} cache The cache to search
  * @param {string[]} names The names of the item to search for
  * @returns {Promise<FileResponse|Response|undefined>} The item from the cache, or undefined if not found.
@@ -664,6 +669,26 @@ export async function getModelFile(path_or_repo_id, filename, fatal = true, opti
 }
 
 /**
+ * Fetches a text file from a given path and file name.
+ *
+ * @param {string} modelPath The path to the directory containing the file.
+ * @param {string} fileName The name of the file to fetch.
+ * @param {boolean} [fatal=true] Whether to throw an error if the file is not found.
+ * @param {PretrainedOptions} [options] An object containing optional parameters.
+ * @returns {Promise<string|null>} The text content of the file.
+ * @throws Will throw an error if the file is not found and `fatal` is true.
+ */
+export async function getModelText(modelPath, fileName, fatal = true, options = {}) {
+    const buffer = await getModelFile(modelPath, fileName, fatal, options, false);
+    if (buffer === null) {
+        return null;
+    }
+
+    const decoder = new TextDecoder('utf-8');
+    return decoder.decode(/** @type {Uint8Array} */(buffer));
+}
+
+/**
  * Fetches a JSON file from a given path and file name.
  *
  * @param {string} modelPath The path to the directory containing the file.
@@ -674,16 +699,13 @@ export async function getModelFile(path_or_repo_id, filename, fatal = true, opti
  * @throws Will throw an error if the file is not found and `fatal` is true.
  */
 export async function getModelJSON(modelPath, fileName, fatal = true, options = {}) {
-    const buffer = await getModelFile(modelPath, fileName, fatal, options, false);
-    if (buffer === null) {
+    const text = await getModelText(modelPath, fileName, fatal, options);
+    if (text === null) {
         // Return empty object
-        return {}
+        return {};
     }
 
-    const decoder = new TextDecoder('utf-8');
-    const jsonData = decoder.decode(/** @type {Uint8Array} */(buffer));
-
-    return JSON.parse(jsonData);
+    return JSON.parse(text);
 }
 /**
  * Read and track progress when reading a Response object

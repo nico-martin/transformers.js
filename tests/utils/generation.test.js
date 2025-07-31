@@ -282,50 +282,42 @@ describe("PKV caching", () => {
     }, MAX_MODEL_DISPOSE_TIME);
   });
 
-  describe("LlavaForConditionalGeneration", () => {
-    const model_id = "Xenova/tiny-random-LlavaForConditionalGeneration";
-    /** @type {LlavaForConditionalGeneration} */
+  describe("LlamaForCausalLM (onnxruntime-genai)", () => {
+    const model_id = "onnx-internal-testing/tiny-random-LlamaForCausalLM-GQA";
+    /** @type {LlamaForCausalLM} */
     let model;
-    /** @type {PreTrainedTokenizer} */
+    /** @type {LlamaTokenizer} */
     let tokenizer;
-    /** @type {Processor} */
-    let processor;
     beforeAll(async () => {
-      model = await LlavaForConditionalGeneration.from_pretrained(model_id, DEFAULT_MODEL_OPTIONS);
-      tokenizer = await AutoTokenizer.from_pretrained(model_id);
-      processor = await AutoProcessor.from_pretrained(model_id);
+      model = await LlamaForCausalLM.from_pretrained(model_id, DEFAULT_MODEL_OPTIONS);
+      tokenizer = await LlamaTokenizer.from_pretrained(model_id);
     }, MAX_MODEL_LOAD_TIME);
 
     it(
       "batch_size=1",
       async () => {
-        const text_inputs = tokenizer("<image>hello");
-
-        // Empty white image
-        const dims = [224, 224, 3];
-        const image = new RawImage(new Uint8ClampedArray(dims[0] * dims[1] * dims[2]).fill(255), ...dims);
-        const vision_inputs = await processor(image);
+        const inputs = tokenizer("1");
 
         // Generate first sequence w/o PKV
         // NOTE: `return_dict_in_generate=true` is required to get PKV
         const { past_key_values, sequences } = await model.generate({
-          ...text_inputs,
-          ...vision_inputs,
+          ...inputs,
           max_new_tokens: 5,
           do_sample: false,
           return_dict_in_generate: true,
         });
 
         // Update output with new text
-        const decoded = tokenizer.batch_decode(sequences).map((x) => x + "new");
-        const new_inputs = tokenizer(decoded, {
+        const decoded = tokenizer.batch_decode(sequences, {
+          skip_special_tokens: false,
+        })[0];
+        const new_inputs = tokenizer(decoded + "2", {
           add_special_tokens: false,
         });
 
         // Run w/o PKV
         const generated_ids = await model.generate({
           ...new_inputs,
-          ...vision_inputs,
           max_new_tokens: 3,
           do_sample: false,
         });
@@ -338,7 +330,8 @@ describe("PKV caching", () => {
           do_sample: false,
         });
 
-        const target = [[1n, 32000n, 29871n, 23927n, 359n, 1519n, 568n, 5769n, 1330n, 21544n, 11568n, 1482n, 7258n, 1250n, 16117n]];
+        const target = [[128000n, 16n, 34732n, 98805n, 116404n, 68265n, 99392n, 17n, 21855n, 60933n, 14285n]];
+
         expect(generated_ids.tolist()).toEqual(target);
         expect(generated_ids_pkv.tolist()).toEqual(target);
       },
