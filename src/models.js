@@ -3657,8 +3657,8 @@ export class WhisperForConditionalGeneration extends WhisperPreTrainedModel {
         const batch = generate_outputs.cross_attentions;
         // Create a list with `decoder_layers` elements, each a tensor of shape
         // (batch size, attention_heads, output length, input length).
-        // @ts-expect-error TS2339
         const cross_attentions = Array.from(
+            // @ts-expect-error TS2339
             { length: this.config.decoder_layers },
             // Concatenate the cross attentions for each layer across sequence length dimension.
             (_, i) =>

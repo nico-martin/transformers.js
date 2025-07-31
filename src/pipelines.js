@@ -1778,13 +1778,13 @@ export class AutomaticSpeechRecognitionPipeline
         if (single) {
             audio = [/** @type {AudioInput} */ (audio)];
         }
+        const feature_extractor_config = this.processor.feature_extractor.config;
 
         // @ts-expect-error TS2339
-        const time_precision =
-            this.processor.feature_extractor.config.chunk_length / this.model.config.max_source_positions;
-        const hop_length = this.processor.feature_extractor.config.hop_length;
+        const time_precision = feature_extractor_config.chunk_length / this.model.config.max_source_positions;
+        const hop_length = feature_extractor_config.hop_length;
 
-        const sampling_rate = this.processor.feature_extractor.config.sampling_rate;
+        const sampling_rate = feature_extractor_config.sampling_rate;
         const preparedAudios = await prepareAudios(audio, sampling_rate);
 
         const toReturn = [];
