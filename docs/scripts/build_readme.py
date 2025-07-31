@@ -53,9 +53,9 @@ FILES_TO_INCLUDE = dict(
     intro='./docs/snippets/0_introduction.snippet',
     quick_tour='./docs/snippets/1_quick-tour.snippet',
     installation='./docs/snippets/2_installation.snippet',
-    custom_usage='./docs/snippets/4_custom-usage.snippet',
-    tasks='./docs/snippets/5_supported-tasks.snippet',
-    models='./docs/snippets/6_supported-models.snippet',
+    custom_usage='./docs/snippets/3_custom-usage.snippet',
+    tasks='./docs/snippets/4_supported-tasks.snippet',
+    models='./docs/snippets/5_supported-models.snippet',
 )
 
 DOCS_BASE_URL = 'https://huggingface.co/docs/transformers.js'
