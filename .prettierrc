@@ -3,6 +3,7 @@
     {
       "files": ["src/**/*.{js,mjs,cjs}"],
       "options": {
+        "singleQuote": true,
         "tabWidth": 4,
         "printWidth": 120
       }
