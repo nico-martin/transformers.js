@@ -1,14 +1,14 @@
 {
   "overrides": [
     {
-      "files": ["src/**/*.js"],
+      "files": ["src/**/*.{js,mjs,cjs}"],
       "options": {
         "tabWidth": 4,
         "printWidth": 120
       }
     },
     {
-      "files": ["tests/**/*.js"],
+      "files": ["tests/**/*.{js,mjs,cjs}"],
       "options": {
         "tabWidth": 2,
         "printWidth": 10000000
