@@ -1,4 +1,3 @@
-
 /**
  * The list of devices supported by Transformers.js
  */

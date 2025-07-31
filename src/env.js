@@ -1,24 +1,24 @@
 /**
  * @file Module used to configure Transformers.js.
- * 
+ *
  * **Example:** Disable remote models.
  * ```javascript
  * import { env } from '@huggingface/transformers';
  * env.allowRemoteModels = false;
  * ```
- * 
+ *
  * **Example:** Set local model path.
  * ```javascript
  * import { env } from '@huggingface/transformers';
  * env.localModelPath = '/path/to/local/models/';
  * ```
- * 
+ *
  * **Example:** Set cache directory.
  * ```javascript
  * import { env } from '@huggingface/transformers';
  * env.cacheDir = '/path/to/cache/directory/';
  * ```
- * 
+ *
  * @module env
  */
 
@@ -38,9 +38,13 @@ const IS_DENO_RUNTIME = typeof globalThis.Deno !== 'undefined';
 const IS_BUN_RUNTIME = typeof globalThis.Bun !== 'undefined';
 
 // Check if various APIs are available (depends on environment)
-const IS_BROWSER_ENV = typeof window !== "undefined" && typeof window.document !== "undefined";
-const IS_WEBWORKER_ENV = typeof self !== "undefined" && (['DedicatedWorkerGlobalScope', 'ServiceWorkerGlobalScope', 'SharedWorkerGlobalScope'].includes(self.constructor?.name));
-const IS_WEB_CACHE_AVAILABLE = typeof self !== "undefined" && 'caches' in self;
+const IS_BROWSER_ENV = typeof window !== 'undefined' && typeof window.document !== 'undefined';
+const IS_WEBWORKER_ENV =
+    typeof self !== 'undefined' &&
+    ['DedicatedWorkerGlobalScope', 'ServiceWorkerGlobalScope', 'SharedWorkerGlobalScope'].includes(
+        self.constructor?.name,
+    );
+const IS_WEB_CACHE_AVAILABLE = typeof self !== 'undefined' && 'caches' in self;
 const IS_WEBGPU_AVAILABLE = IS_NODE_ENV || (typeof navigator !== 'undefined' && 'gpu' in navigator);
 const IS_WEBNN_AVAILABLE = typeof navigator !== 'undefined' && 'ml' in navigator;
 
@@ -61,7 +65,7 @@ const isSafari = () => {
     // Safari has "Apple" in vendor string
     const isAppleVendor = vendor.indexOf('Apple') > -1;
 
-    // Exclude Chrome on iOS (CriOS), Firefox on iOS (FxiOS), 
+    // Exclude Chrome on iOS (CriOS), Firefox on iOS (FxiOS),
     // Edge on iOS (EdgiOS), and other browsers
     const notOtherBrowser =
         !userAgent.match(/CriOS|FxiOS|EdgiOS|OPiOS|mercury|brave/i) &&
@@ -117,22 +121,18 @@ if (RUNNING_LOCALLY) {
     const _import_meta_url = Object(import.meta).url;
 
     if (_import_meta_url) {
-        dirname__ = path.dirname(path.dirname(url.fileURLToPath(_import_meta_url))) // ESM
+        dirname__ = path.dirname(path.dirname(url.fileURLToPath(_import_meta_url))); // ESM
     } else if (typeof __dirname !== 'undefined') {
-        dirname__ = path.dirname(__dirname) // CommonJS
+        dirname__ = path.dirname(__dirname); // CommonJS
     }
 }
 
 // Only used for environments with access to file system
-const DEFAULT_CACHE_DIR = RUNNING_LOCALLY
-    ? path.join(dirname__, '/.cache/')
-    : null;
+const DEFAULT_CACHE_DIR = RUNNING_LOCALLY ? path.join(dirname__, '/.cache/') : null;
 
 // Set local model path, based on available APIs
 const DEFAULT_LOCAL_MODEL_PATH = '/models/';
-const localModelPath = RUNNING_LOCALLY
-    ? path.join(dirname__, DEFAULT_LOCAL_MODEL_PATH)
-    : DEFAULT_LOCAL_MODEL_PATH;
+const localModelPath = RUNNING_LOCALLY ? path.join(dirname__, DEFAULT_LOCAL_MODEL_PATH) : DEFAULT_LOCAL_MODEL_PATH;
 
 /**
  * Global variable given visible to users to control execution. This provides users a simple way to configure Transformers.js.
@@ -186,8 +186,7 @@ export const env = {
     useCustomCache: false,
     customCache: null,
     //////////////////////////////////////////////////////
-}
-
+};
 
 /**
  * @param {Object} obj
