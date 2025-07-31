@@ -30,10 +30,6 @@ README_TEMPLATE = """
 
 {quick_tour}
 
-## Examples
-
-{examples}
-
 ## Custom usage
 
 {custom_usage}
@@ -57,7 +53,6 @@ FILES_TO_INCLUDE = dict(
     intro='./docs/snippets/0_introduction.snippet',
     quick_tour='./docs/snippets/1_quick-tour.snippet',
     installation='./docs/snippets/2_installation.snippet',
-    examples='./docs/snippets/3_examples.snippet',
     custom_usage='./docs/snippets/4_custom-usage.snippet',
     tasks='./docs/snippets/5_supported-tasks.snippet',
     models='./docs/snippets/6_supported-models.snippet',
