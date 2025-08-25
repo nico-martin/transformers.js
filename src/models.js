@@ -310,7 +310,7 @@ async function getSession(pretrained_model_name_or_path, fileName, options, is_d
         }
     }
 
-    if (is_decoder && selectedDevice === 'webgpu' && kv_cache_dtype !== false) {
+    if (is_decoder && selectedDevice === 'webgpu' && kv_cache_dtype_config !== false) {
         const shapes = getCacheShapes(options.config, {
             prefix: 'present',
         });
