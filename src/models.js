@@ -39,7 +39,13 @@
 
 import { AutoConfig, getCacheShapes } from './configs.js';
 
-import { deviceToExecutionProviders, createInferenceSession, isONNXTensor, isONNXProxy } from './backends/onnx.js';
+import {
+    deviceToExecutionProviders,
+    createInferenceSession,
+    isONNXTensor,
+    isONNXProxy,
+    runInferenceSession,
+} from './backends/onnx.js';
 import {
     DATA_TYPES,
     DEFAULT_DEVICE_DTYPE_MAPPING,
@@ -425,10 +431,6 @@ function validateInputs(session, inputs) {
     return checkedInputs;
 }
 
-// Currently, Transformers.js doesn't support simultaneous execution of sessions in WASM/WebGPU.
-// For this reason, we need to chain the inference calls (otherwise we get "Error: Session already started").
-let webInferenceChain = Promise.resolve();
-
 /**
  * Executes an InferenceSession using the specified inputs.
  * NOTE: `inputs` must contain at least the input names of the model.
@@ -445,10 +447,7 @@ async function sessionRun(session, inputs) {
     try {
         // pass the original ort tensor
         const ortFeed = Object.fromEntries(Object.entries(checkedInputs).map(([k, v]) => [k, v.ort_tensor]));
-        const run = () => session.run(ortFeed);
-        const output = await (apis.IS_BROWSER_ENV || apis.IS_WEBWORKER_ENV
-            ? (webInferenceChain = webInferenceChain.then(run))
-            : run());
+        const output = await runInferenceSession(session, ortFeed);
         return replaceTensors(output);
     } catch (e) {
         // Error messages can be long (nested) and uninformative. For this reason,
@@ -4679,6 +4678,13 @@ export class LlamaModel extends LlamaPreTrainedModel {}
 export class LlamaForCausalLM extends LlamaPreTrainedModel {}
 //////////////////////////////////////////////////
 
+
+//////////////////////////////////////////////////
+export class Llama4PreTrainedModel extends PreTrainedModel { }
+export class Llama4ForCausalLM extends Llama4PreTrainedModel { }
+//////////////////////////////////////////////////
+
+
 //////////////////////////////////////////////////
 // Arcee models
 export class ArceePreTrainedModel extends PreTrainedModel {}
@@ -4789,6 +4795,13 @@ export class Gemma2PreTrainedModel extends PreTrainedModel {}
 export class Gemma2Model extends Gemma2PreTrainedModel {}
 
 export class Gemma2ForCausalLM extends Gemma2PreTrainedModel {}
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+// VaultGemma models
+export class VaultGemmaPreTrainedModel extends PreTrainedModel { }
+export class VaultGemmaModel extends VaultGemmaPreTrainedModel { }
+export class VaultGemmaForCausalLM extends VaultGemmaPreTrainedModel { }
 //////////////////////////////////////////////////
 
 //////////////////////////////////////////////////
@@ -5916,6 +5929,18 @@ export class Dinov2WithRegistersForImageClassification extends Dinov2WithRegiste
         return new SequenceClassifierOutput(await super._call(model_inputs));
     }
 }
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+export class DINOv3ViTPreTrainedModel extends PreTrainedModel { }
+export class DINOv3ViTModel extends DINOv3ViTPreTrainedModel { }
+//////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+export class DINOv3ConvNextPreTrainedModel extends PreTrainedModel { }
+export class DINOv3ConvNextModel extends DINOv3ConvNextPreTrainedModel { }
+//////////////////////////////////////////////////
+
 //////////////////////////////////////////////////
 export class GroundingDinoPreTrainedModel extends PreTrainedModel {}
 export class GroundingDinoForObjectDetection extends GroundingDinoPreTrainedModel {}
@@ -7787,6 +7812,8 @@ const MODEL_MAPPING_NAMES_ENCODER_ONLY = new Map([
     ['convnextv2', ['ConvNextV2Model', ConvNextV2Model]],
     ['dinov2', ['Dinov2Model', Dinov2Model]],
     ['dinov2_with_registers', ['Dinov2WithRegistersModel', Dinov2WithRegistersModel]],
+    ['dinov3_vit', ['DINOv3ViTModel', DINOv3ViTModel]],
+    ['dinov3_convnext', ['DINOv3ConvNextModel', DINOv3ConvNextModel]],
     ['resnet', ['ResNetModel', ResNetModel]],
     ['swin', ['SwinModel', SwinModel]],
     ['swin2sr', ['Swin2SRModel', Swin2SRModel]],
@@ -7853,6 +7880,7 @@ const MODEL_MAPPING_NAMES_DECODER_ONLY = new Map([
     ['cohere', ['CohereModel', CohereModel]],
     ['gemma', ['GemmaModel', GemmaModel]],
     ['gemma2', ['Gemma2Model', Gemma2Model]],
+    ['vaultgemma', ['VaultGemmaModel', VaultGemmaModel]],
     ['gemma3_text', ['Gemma3Model', Gemma3Model]],
     ['helium', ['HeliumModel', HeliumModel]],
     ['glm', ['GlmModel', GlmModel]],
@@ -7950,6 +7978,7 @@ const MODEL_FOR_CAUSAL_LM_MAPPING_NAMES = new Map([
     ['gpt_neox', ['GPTNeoXForCausalLM', GPTNeoXForCausalLM]],
     ['codegen', ['CodeGenForCausalLM', CodeGenForCausalLM]],
     ['llama', ['LlamaForCausalLM', LlamaForCausalLM]],
+    ['llama4_text', ['Llama4ForCausalLM', Llama4ForCausalLM]],
     ['arcee', ['ArceeForCausalLM', ArceeForCausalLM]],
     ['lfm2', ['Lfm2ForCausalLM', Lfm2ForCausalLM]],
     ['smollm3', ['SmolLM3ForCausalLM', SmolLM3ForCausalLM]],
@@ -7961,6 +7990,7 @@ const MODEL_FOR_CAUSAL_LM_MAPPING_NAMES = new Map([
     ['cohere', ['CohereForCausalLM', CohereForCausalLM]],
     ['gemma', ['GemmaForCausalLM', GemmaForCausalLM]],
     ['gemma2', ['Gemma2ForCausalLM', Gemma2ForCausalLM]],
+    ['vaultgemma', ['VaultGemmaForCausalLM', VaultGemmaForCausalLM]],
     ['gemma3_text', ['Gemma3ForCausalLM', Gemma3ForCausalLM]],
     ['helium', ['HeliumForCausalLM', HeliumForCausalLM]],
     ['glm', ['GlmForCausalLM', GlmForCausalLM]],

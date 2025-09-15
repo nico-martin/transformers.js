@@ -1,3 +1,4 @@
+
 export * from './beit/image_processing_beit.js';
 export * from './bit/image_processing_bit.js';
 export * from './chinese_clip/image_processing_chinese_clip.js';
@@ -5,6 +6,7 @@ export * from './clip/image_processing_clip.js';
 export * from './convnext/image_processing_convnext.js';
 export * from './deit/image_processing_deit.js';
 export * from './detr/image_processing_detr.js';
+export * from './dinov3_vit/image_processing_dinov3_vit.js';
 export * from './donut/image_processing_donut.js';
 export * from './dpt/image_processing_dpt.js';
 export * from './efficientnet/image_processing_efficientnet.js';
