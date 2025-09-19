@@ -24,7 +24,7 @@ const wrap = async (session_bytes, session_options, names) => {
         } else {
             return new Tensor(outputs[/** @type {string} */(names)]);
         }
-    );
+    });
 };
 
 // In-memory registry of initialized ONNX operators
