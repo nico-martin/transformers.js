@@ -1713,16 +1713,35 @@ class RobertaProcessing extends BertProcessing {} // NOTE: extends BertProcessin
  */
 class TemplateProcessing extends PostProcessor {
     /**
+     * @typedef {Object} SpecialToken
+     * @property {string} id The id of the special token.
+     * @property {number} type_id The type id of the special token.
+     * 
+     * @typedef {Object} Sequence
+     * @property {"A"|"B"} id The id of the sequence ('A' or 'B').
+     * @property {number} type_id The type id of the sequence.
+     * 
+     * @typedef {Object} TemplateItem
+     * @property {SpecialToken} [SpecialToken] A special token to be added.
+     * @property {Sequence} [Sequence] A sequence of tokens to be added.
+     * 
+     * @typedef {Record<string, {id: string, ids: number[], tokens: string[]}>} SpecialTokensMap
+     */
+
+    /**
      * Creates a new instance of `TemplateProcessing`.
      * @param {Object} config The configuration options for the post processor.
-     * @param {Array} config.single The template for a single sequence of tokens.
-     * @param {Array} config.pair The template for a pair of sequences of tokens.
+     * @param {TemplateItem[]} config.single The template for a single sequence of tokens.
+     * @param {TemplateItem[]} config.pair The template for a pair of sequences of tokens.
+     * @param {SpecialTokensMap} config.special_tokens A mapping of special token ids to their corresponding token strings and ids.
      */
     constructor(config) {
         super(config);
 
         this.single = config.single;
         this.pair = config.pair;
+        // TODO: Use special tokens object
+        // this.special_tokens = config.special_tokens;
     }
 
     /**
