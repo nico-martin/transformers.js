@@ -139,7 +139,7 @@ class FileResponse {
      */
     async blob() {
         const data = await fs.promises.readFile(this.filePath);
-        return new Blob([data], { type: this.headers.get('content-type') });
+        return new Blob([/** @type {any} */(data)], { type: this.headers.get('content-type') });
     }
 
     /**
@@ -645,7 +645,7 @@ export async function getModelFile(path_or_repo_id, filename, fatal = true, opti
             await cache
                 .put(
                     cacheKey,
-                    new Response(result, {
+                    new Response(/** @type {any} */(result), {
                         headers: response.headers,
                     }),
                 )
