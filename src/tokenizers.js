@@ -87,7 +87,7 @@ function regexSplit(text, regex) {
 
 /**
  * Helper method to construct a pattern from a config object.
- * @param {Object} pattern The pattern object.
+ * @param {{Regex?: string, String?: string}} pattern The pattern object.
  * @param {boolean} invert Whether to invert the pattern.
  * @returns {RegExp|null} The compiled pattern.
  */
@@ -231,7 +231,7 @@ function fuse_unk(arr, tokens_to_ids, unk_token_id) {
         }
 
         while (++i < arr.length && (tokens_to_ids.get(arr[i]) ?? unk_token_id) === unk_token_id) {
-            if (tokens_to_ids.get(fused.at(-1)) !== unk_token_id) {
+            if (tokens_to_ids.get(/** @type {string} */(fused.at(-1))) !== unk_token_id) {
                 fused[fused.length - 1] += arr[i];
             }
         }
@@ -316,8 +316,11 @@ export class TokenizerModel extends Callable {
          */
         this.tokens_to_ids = new Map();
 
+        /** @type {number|undefined} */
         this.unk_token_id = undefined;
+        /** @type {string|undefined} */
         this.unk_token = undefined;
+        /** @type {string|undefined} */
         this.end_of_word_suffix = undefined;
 
         /** @type {boolean} Whether to fuse unknown tokens when encoding. Defaults to false. */
@@ -1641,7 +1644,7 @@ class PostProcessor extends Callable {
     /**
      * Method to be implemented in subclass to apply post-processing on the given tokens.
      *
-     * @param {Array} tokens The input tokens to be post-processed.
+     * @param {string[]} tokens The input tokens to be post-processed.
      * @param {...*} args Additional arguments required by the post-processing logic.
      * @returns {PostProcessedOutput} The post-processed tokens.
      * @throws {Error} If the method is not implemented in subclass.
@@ -1652,9 +1655,7 @@ class PostProcessor extends Callable {
 
     /**
      * Alias for {@link PostProcessor#post_process}.
-     * @param {Array} tokens The text or array of texts to post-process.
-     * @param {...*} args Additional arguments required by the post-processing logic.
-     * @returns {PostProcessedOutput} The post-processed tokens.
+     * @type {PostProcessor['post_process']}
      */
     _call(tokens, ...args) {
         return this.post_process(tokens, ...args);
@@ -1681,7 +1682,7 @@ class BertProcessing extends PostProcessor {
     /**
      * Adds the special tokens to the beginning and end of the input.
      * @param {string[]} tokens The input tokens.
-     * @param {string[]} [tokens_pair=null] An optional second set of input tokens.
+     * @param {string[]|null} [tokens_pair=null] An optional second set of input tokens.
      * @returns {PostProcessedOutput} The post-processed tokens with the special tokens added to the beginning and end.
      */
     post_process(tokens, tokens_pair = null, { add_special_tokens = true } = {}) {
@@ -1747,7 +1748,7 @@ class TemplateProcessing extends PostProcessor {
     /**
      * Replaces special tokens in the template with actual tokens.
      * @param {string[]} tokens The list of tokens for the first sequence.
-     * @param {string[]} [tokens_pair=null] The list of tokens for the second sequence (optional).
+     * @param {string[]|null} [tokens_pair=null] The list of tokens for the second sequence (optional).
      * @returns {PostProcessedOutput} An object containing the list of tokens with the special tokens replaced with actual tokens.
      */
     post_process(tokens, tokens_pair = null, { add_special_tokens = true } = {}) {
@@ -1765,7 +1766,7 @@ class TemplateProcessing extends PostProcessor {
                 if (item.Sequence.id === 'A') {
                     processedTokens = mergeArrays(processedTokens, tokens);
                     types = mergeArrays(types, new Array(tokens.length).fill(item.Sequence.type_id));
-                } else if (item.Sequence.id === 'B') {
+                } else if (tokens_pair && item.Sequence.id === 'B') {
                     processedTokens = mergeArrays(processedTokens, tokens_pair);
                     types = mergeArrays(types, new Array(tokens_pair.length).fill(item.Sequence.type_id));
                 }
@@ -1783,7 +1784,7 @@ class ByteLevelPostProcessor extends PostProcessor {
     /**
      * Post process the given tokens.
      * @param {string[]} tokens The list of tokens for the first sequence.
-     * @param {string[]} [tokens_pair=null] The list of tokens for the second sequence (optional).
+     * @param {string[]|null} [tokens_pair=null] The list of tokens for the second sequence (optional).
      * @returns {PostProcessedOutput} An object containing the post-processed tokens.
      */
     post_process(tokens, tokens_pair = null) {
@@ -1812,7 +1813,7 @@ class PostProcessorSequence extends PostProcessor {
     /**
      * Post process the given tokens.
      * @param {string[]} tokens The list of tokens for the first sequence.
-     * @param {string[]} [tokens_pair=null] The list of tokens for the second sequence (optional).
+     * @param {string[]|null} [tokens_pair=null] The list of tokens for the second sequence (optional).
      * @returns {PostProcessedOutput} An object containing the post-processed tokens.
      */
     post_process(tokens, tokens_pair = null, options = {}) {
@@ -4016,7 +4017,7 @@ export class WhisperTokenizer extends PreTrainedTokenizer {
         const time_precision = decode_args?.time_precision ?? 0.02;
 
         const timestamp_begin = Array.from(this.all_special_ids).at(-1) + 1;
-        /**@type {Array} */
+        /**@type {any[]} */
         let outputs = [[]];
         for (let token of token_ids) {
             token = Number(token);
@@ -4208,7 +4209,7 @@ export class MarianTokenizer extends PreTrainedTokenizer {
      * @see https://github.com/huggingface/transformers/blob/12d51db243a00726a548a43cc333390ebae731e3/src/transformers/models/marian/tokenization_marian.py#L204-L213
      *
      * @param {string|null} text The text to encode.
-     * @returns {Array} The encoded tokens.
+     * @returns {string[]|null} The encoded tokens.
      */
     _encode_text(text) {
         if (text === null) return null;
