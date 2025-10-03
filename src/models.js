@@ -1427,6 +1427,12 @@ export class PreTrainedModel extends Callable {
             processors.push(new ClassifierFreeGuidanceLogitsProcessor(generation_config.guidance_scale));
         }
 
+
+        if (generation_config.temperature === 0 && generation_config.do_sample) {
+          console.warn('do_sample automatically set to false. When temperature: 0, the model uses deterministic sampling (always selecting the most likely token), which is incompatible with do_sample: true.');
+          generation_config.do_sample = false;
+        }
+
         if (generation_config.do_sample) {
             if (generation_config.temperature !== null && generation_config.temperature !== 1.0) {
                 processors.push(new TemperatureLogitsWarper(generation_config.temperature));
