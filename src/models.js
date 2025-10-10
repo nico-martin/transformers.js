@@ -1427,6 +1427,12 @@ export class PreTrainedModel extends Callable {
             processors.push(new ClassifierFreeGuidanceLogitsProcessor(generation_config.guidance_scale));
         }
 
+
+        if (generation_config.temperature === 0 && generation_config.do_sample) {
+          console.warn('`do_sample` changed to false because `temperature: 0` implies greedy sampling (always selecting the most likely token), which is incompatible with `do_sample: true`.');
+          generation_config.do_sample = false;
+        }
+
         if (generation_config.do_sample) {
             if (generation_config.temperature !== null && generation_config.temperature !== 1.0) {
                 processors.push(new TemperatureLogitsWarper(generation_config.temperature));
@@ -4653,6 +4659,12 @@ export class GraniteModel extends GranitePreTrainedModel { }
 export class GraniteForCausalLM extends GranitePreTrainedModel { }
 //////////////////////////////////////////////////
 
+//////////////////////////////////////////////////
+// GraniteMoeHybrid models
+export class GraniteMoeHybridPreTrainedModel extends PreTrainedModel { }
+export class GraniteMoeHybridModel extends GraniteMoeHybridPreTrainedModel { }
+export class GraniteMoeHybridForCausalLM extends GraniteMoeHybridPreTrainedModel { }
+//////////////////////////////////////////////////
 
 //////////////////////////////////////////////////
 // Cohere models
@@ -7841,6 +7853,7 @@ const MODEL_MAPPING_NAMES_DECODER_ONLY = new Map([
     ['olmo2', ['Olmo2Model', Olmo2Model]],
     ['mobilellm', ['MobileLLMModel', MobileLLMModel]],
     ['granite', ['GraniteModel', GraniteModel]],
+    ['granitemoehybrid', ['GraniteMoeHybridModel', GraniteMoeHybridModel]],
     ['cohere', ['CohereModel', CohereModel]],
     ['gemma', ['GemmaModel', GemmaModel]],
     ['gemma2', ['Gemma2Model', Gemma2Model]],
@@ -7951,6 +7964,7 @@ const MODEL_FOR_CAUSAL_LM_MAPPING_NAMES = new Map([
     ['olmo2', ['Olmo2ForCausalLM', Olmo2ForCausalLM]],
     ['mobilellm', ['MobileLLMForCausalLM', MobileLLMForCausalLM]],
     ['granite', ['GraniteForCausalLM', GraniteForCausalLM]],
+    ['granitemoehybrid', ['GraniteMoeHybridForCausalLM', GraniteMoeHybridForCausalLM]],
     ['cohere', ['CohereForCausalLM', CohereForCausalLM]],
     ['gemma', ['GemmaForCausalLM', GemmaForCausalLM]],
     ['gemma2', ['Gemma2ForCausalLM', Gemma2ForCausalLM]],
