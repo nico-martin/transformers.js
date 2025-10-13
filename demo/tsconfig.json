@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "baseUrl": ".",
+    "module": "commonjs",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@huggingface/transformers": ["../types/transformers.d.ts"]
+    },
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "strict": true,
+    "outDir": "./dist",
+    "esModuleInterop": true
+  },
+  "include": ["./src/**/*", "index.ts"]
+}
