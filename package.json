@@ -27,6 +27,7 @@
     "typegen": "tsc --build",
     "dev": "webpack serve --no-client-overlay",
     "build": "webpack && npm run typegen",
+    "build-watch": "webpack serve --no-client-overlay --watch",
     "test": "node --experimental-vm-modules --expose-gc node_modules/jest/bin/jest.js --verbose",
     "readme": "python ./docs/scripts/build_readme.py",
     "docs-api": "node ./docs/scripts/generate.js",

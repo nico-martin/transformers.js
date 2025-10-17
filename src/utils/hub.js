@@ -10,6 +10,7 @@ import path from 'node:path';
 
 import { apis, env } from '../env.js';
 import { dispatchCallback } from './core.js';
+import CrossOriginStorage from './CrossOriginStorage.js'
 
 /**
  * @typedef {boolean|number} ExternalData Whether to load the model using the external data format (used for models >= 2GB in size).
@@ -402,7 +403,6 @@ async function tryCache(cache, ...names) {
  * @returns {Promise<string|Uint8Array>} A Promise that resolves with the file content as a Uint8Array if `return_path` is false, or the file path as a string if `return_path` is true.
  */
 export async function getModelFile(path_or_repo_id, filename, fatal = true, options = {}, return_path = false) {
-
     if (!env.allowLocalModels) {
         // User has disabled local models, so we just make sure other settings are correct.
 
@@ -478,6 +478,10 @@ export async function getModelFile(path_or_repo_id, filename, fatal = true, opti
             .replaceAll('{revision}', encodeURIComponent(revision)),
         filename
     );
+
+    if(CrossOriginStorage.isAvailable()){
+      cache = new CrossOriginStorage();
+    }
 
     /** @type {string} */
     let cacheKey;

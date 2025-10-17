@@ -3484,7 +3484,6 @@ export async function pipeline(
  * @private
  */
 async function loadItems(mapping, model, pretrainedOptions) {
-
     const result = Object.create(null);
 
     /**@type {Promise[]} */
