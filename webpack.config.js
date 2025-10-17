@@ -92,6 +92,10 @@ function buildConfig({
       [`transformers${name}`]: "./src/transformers.js",
       [`transformers${name}.min`]: "./src/transformers.js",
     },
+    watchOptions: {
+      poll: true,
+      ignored: /node_modules/
+    },
     output: {
       filename: `[name]${suffix}`,
       path: path.join(__dirname, "dist"),
@@ -131,6 +135,11 @@ function buildConfig({
         directory: __dirname,
       },
       port: 8080,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
+      }
     },
     plugins,
   };
