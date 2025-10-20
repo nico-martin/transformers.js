@@ -1,12 +1,15 @@
+const HASH_ALGORITHM = "SHA-256";
+
 class CrossOriginStorage {
-  static isAvailable = () => "crossOriginStorage" in navigator;
+  static isAvailable = () =>
+    typeof navigator !== "undefined" && "crossOriginStorage" in navigator;
 
   match = async (request) => {
     const hashValue = await this._getFileHash(request);
     if (!hashValue) {
       return undefined;
     }
-    const hash = { algorithm: "SHA-256", value: hashValue };
+    const hash = { algorithm: HASH_ALGORITHM, value: hashValue };
     try {
       // @ts-expect-error
       const [handle] = await navigator.crossOriginStorage.requestFileHandles([
@@ -31,6 +34,8 @@ class CrossOriginStorage {
     await writableStream.close();
   };
 
+  // Gets the SHA-256 hash for large resources as per
+  // https://huggingface.co/docs/hub/en/storage-backends#xet.
   _getFileHash = async (url) => {
     if (/\/resolve\/main\/onnx\//.test(url)) {
       const rawUrl = url.replace(/\/resolve\//, "/raw/");
