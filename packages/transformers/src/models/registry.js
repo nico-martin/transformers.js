@@ -223,6 +223,7 @@ const MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES = new Map([
     ['mbart', 'MBartForSequenceClassification'],
     ['mobilebert', 'MobileBertForSequenceClassification'],
     ['squeezebert', 'SqueezeBertForSequenceClassification'],
+    ['qwen3_5_text', 'Qwen3_5ForSequenceClassification'],
 ]);
 
 const MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING_NAMES = new Map([

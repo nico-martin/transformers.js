@@ -1,4 +1,4 @@
-import { Qwen3_5ForConditionalGeneration, Qwen3_5ForCausalLM, AutoProcessor, AutoTokenizer, RawImage } from "../../../src/transformers.js";
+import { Qwen3_5ForConditionalGeneration, Qwen3_5ForCausalLM, Qwen3_5ForSequenceClassification, AutoProcessor, AutoTokenizer, RawImage } from "../../../src/transformers.js";
 
 import { MAX_MODEL_LOAD_TIME, MAX_TEST_EXECUTION_TIME, MAX_MODEL_DISPOSE_TIME, DEFAULT_MODEL_OPTIONS } from "../../init.js";
 
@@ -179,6 +179,48 @@ export default () => {
           do_sample: false,
         });
         expect(outputs.tolist()).toEqual([[14556n, 156450n, 73097n, 47596n, 67970n, 15437n, 244844n, 43757n, 26602n, 3582n]]);
+      },
+      MAX_TEST_EXECUTION_TIME,
+    );
+
+    afterAll(async () => {
+      await model?.dispose();
+    }, MAX_MODEL_DISPOSE_TIME);
+  });
+
+  // TODO: Publish `onnx-internal-testing/tiny-random-Qwen3_5ForSequenceClassification`
+  // (text-only Qwen3.5 backbone + `score` head exported as a single `model.onnx` with
+  // `input_ids`/`attention_mask` -> `logits`) and fill in the reference logits.
+  describe.skip("Qwen3_5ForSequenceClassification", () => {
+    const model_id = "onnx-internal-testing/tiny-random-Qwen3_5ForSequenceClassification";
+
+    /** @type {Qwen3_5ForSequenceClassification} */
+    let model;
+    /** @type {import("../../../src/transformers.js").PreTrainedTokenizer} */
+    let tokenizer;
+    beforeAll(async () => {
+      model = await Qwen3_5ForSequenceClassification.from_pretrained(model_id, DEFAULT_MODEL_OPTIONS);
+      tokenizer = await AutoTokenizer.from_pretrained(model_id);
+    }, MAX_MODEL_LOAD_TIME);
+
+    it(
+      "batch_size=1",
+      async () => {
+        const inputs = tokenizer("hello");
+        const { logits } = await model(inputs);
+        expect(logits.dims).toEqual([1, 2]);
+        expect(logits.tolist().flat().every(Number.isFinite)).toBe(true);
+      },
+      MAX_TEST_EXECUTION_TIME,
+    );
+
+    it(
+      "batch_size>1",
+      async () => {
+        const inputs = tokenizer(["hello", "hello world"], { padding: true });
+        const { logits } = await model(inputs);
+        expect(logits.dims).toEqual([2, 2]);
+        expect(logits.tolist().flat().every(Number.isFinite)).toBe(true);
       },
       MAX_TEST_EXECUTION_TIME,
     );
